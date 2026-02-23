@@ -119,6 +119,9 @@ export class SelfOrder extends Reactive {
                 }
             });
         }
+        this.data.connectWebSocket("REMOVE_ORDERS", (data) => {
+            this.removeOrdersByAccessTokens(data.deleted_order_tokens);
+        });
         barcode.bus.addEventListener("barcode_scanned", (ev) => {
             if (!this.ordering) {
                 this.notification.add(_t("We're currently closed"), {
@@ -539,6 +542,20 @@ export class SelfOrder extends Reactive {
                     config_name: this.config.name,
                     table_number: this.currentTable?.table_number,
                     floating_order_name: order.floating_order_name,
+                    getLineAttributeNames: (line) => {
+                        const result = (line.attribute_value_ids ?? []).map((a) => a.name);
+                        if (!line.combo_parent_id) {
+                            return result;
+                        }
+                        return [
+                            ...new Set([
+                                ...(line.product_id.product_template_variant_value_ids ?? []).map(
+                                    (a) => a.name
+                                ),
+                                ...result,
+                            ]),
+                        ];
+                    },
                 };
                 const receipt = renderToElement("pos_self_order.OrderChangeReceipt", {
                     changes: printingChanges,
@@ -585,6 +602,13 @@ export class SelfOrder extends Reactive {
                 return;
             }
         }
+    }
+
+    removeOrdersByAccessTokens(orderAccessTokens = []) {
+        // Remove orders and their dependent records locally and from IndexedDB
+        this.models["pos.order"]
+            .filter((o) => orderAccessTokens.includes(o.access_token))
+            .forEach((o) => this.data.localDeleteCascade(o));
     }
 
     cancelOrder() {
@@ -703,13 +727,12 @@ export class SelfOrder extends Reactive {
     async getUserDataFromServer(tokens = []) {
         const tableIdentifier = this.router.getTableIdentifier([]);
         const dbAccessToken = this.models["pos.order"]
-            .filter((o) => o.state === "draft" && o.isSynced)
+            .filter((o) => o.state === "draft" && o.isSynced && o.access_token)
             .map((order) => ({
                 access_token: order.access_token,
                 state: order.state,
                 write_date: serializeDateTime(order.write_date.plus({ seconds: 1 })),
-            }))
-            .filter((order) => order.access_token);
+            }));
 
         // Token given in argument are probably not in the local database
         // so write_date is set to 1970-01-01 00:00:00
@@ -785,6 +808,8 @@ export class SelfOrder extends Reactive {
                 access_token: this.access_token,
             });
             return;
+        } else if (typeof error === "string") {
+            message = error;
         }
 
         this.notification.add(message, {
