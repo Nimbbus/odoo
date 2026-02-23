@@ -1,36 +1,54 @@
    <odoo>
 
-    <template id="report_estate_property_offers">
-        <t t-call="web.html_container">
-            <t t-foreach="docs" t-as="property">
-                <div class="page">
-                    <h2>Offers for <t t-esc="property.name"/></h2>
-                    <t t-if="property.offer_ids">
-                        <table class="table table-sm o_main_table">
-                            <thead>
-                                <tr>
-                                    <th>Partner</th>
-                                    <th>Price</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <t t-foreach="property.offer_ids" t-as="offer">
-                                    <tr>
-                                        <td><t t-esc="offer.partner_id.name"/></td>
-                                        <td><t t-esc="offer.price"/></td>
-                                        <td><t t-esc="offer.status"/></td>
-                                    </tr>
-                                </t>
-                            </tbody>
-                        </table>
-                    </t>
-                    <t t-else="">
-                        <p>No offers yet for this property.</p>
-                    </t>
+ <template id="report_estate_property_offers">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="property">
+            <div class="page" style="padding:30px; font-family:Arial, sans-serif;">
+                
+         
+                <div class="text-center mb-5">
+                    <h1 style="color:#2c3e50; margin-bottom:10px;">Property Offers Report</h1>
+                    <h3 style="color:#16a085;">Property: <t t-esc="property.name"/></h3>
+                    <hr style="margin-top:20px;"/>
                 </div>
-            </t>
+                
+            
+                <t t-if="property.offer_ids">
+                    <table class="table table-bordered table-striped" style="width:100%; font-size:14px;">
+                        <thead style="background-color:#f2f2f2;">
+                            <tr>
+                                <th style="width:40%;">Partner</th>
+                                <th style="width:30%;">Price</th>
+                                <th style="width:30%;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="property.offer_ids" t-as="offer">
+                                <tr>
+                                    <td><t t-esc="offer.partner_id.name"/></td>
+                                    <td style="font-weight:bold; color:#2980b9;"><t t-esc="offer.price"/></td>
+                                    <td>
+                                        <span t-if="offer.status == 'accepted'" style="color:green; font-weight:bold;">Accepted</span>
+                                        <span t-if="offer.status == 'refused'" style="color:red; font-weight:bold;">Refused</span>
+                                        <span t-if="offer.status not in ('accepted','refused')" style="color:orange;"><t t-esc="offer.status"/></span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </t>
+                <t t-else="">
+                    <p class="text-center text-muted" style="margin-top:40px;">No offers yet for this property.</p>
+                </t>
+                
+             
+                <div class="mt-5 text-right text-muted">
+                    <small>Generated on <t t-esc="time.strftime('%Y-%m-%d %H:%M')"/> | Real Estate System</small>
+                </div>
+            </div>
         </t>
-    </template>
+    </t>
+</template>
+
     
 </odoo>
